@@ -1,8 +1,7 @@
 package com.annimon.stream.function;
 
 /**
- * Represents a predicate, i.e. function with boolean type result.
- *
+ * Represents a predicate (function with boolean type result).
  */
 @FunctionalInterface
 public interface IntPredicate {
@@ -17,9 +16,7 @@ public interface IntPredicate {
 
     class Util {
 
-        private Util() {
-            throw new UnsupportedOperationException();
-        }
+        private Util() { }
 
         /**
          * Applies logical AND to predicates.

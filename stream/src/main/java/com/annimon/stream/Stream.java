@@ -2,14 +2,11 @@ package com.annimon.stream;
 
 import com.annimon.stream.function.*;
 
-import java.lang.reflect.Array;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.Iterator;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
@@ -40,22 +37,11 @@ public class Stream<T> {
      * @param <V> the type of map values
      * @param map  the map with elements to be passed to stream
      * @return the new stream
+     * @throws NullPointerException if {@code map} is null
      */
     public static <K, V> Stream<Map.Entry<K, V>> of(Map<K, V> map) {
+        Objects.requireNonNull(map);
         return new Stream<Map.Entry<K, V>>(map.entrySet());
-    }
-
-    /**
-     * Creates a {@code Stream} from {@code List}.
-     *
-     * @param <T> the type of the stream elements
-     * @param list  the list with elements to be passed to stream
-     * @return the new stream
-     */
-    // TODO: Only for binary level compatibility. Remove this method on next breaking-change version.
-    @SuppressWarnings("unchecked")
-    public static <T> Stream<T> of(final List<? extends T> list) {
-        return of((Iterable<T>) list);
     }
 
     /**
@@ -64,8 +50,10 @@ public class Stream<T> {
      * @param <T> the type of the stream elements
      * @param iterator  the iterator with elements to be passed to stream
      * @return the new stream
+     * @throws NullPointerException if {@code iterator} is null
      */
     public static <T> Stream<T> of(Iterator<? extends T> iterator) {
+        Objects.requireNonNull(iterator);
         return new Stream<T>(iterator);
     }
 
@@ -75,8 +63,10 @@ public class Stream<T> {
      * @param <T> the type of the stream elements
      * @param iterable  the iterable with elements to be passed to stream
      * @return the new stream
+     * @throws NullPointerException if {@code iterable} is null
      */
     public static <T> Stream<T> of(Iterable<? extends T> iterable) {
+        Objects.requireNonNull(iterable);
         return new Stream<T>(iterable);
     }
 
@@ -86,8 +76,10 @@ public class Stream<T> {
      * @param <T> the type of the stream elements
      * @param elements  the elements to be passed to stream
      * @return the new stream
+     * @throws NullPointerException if {@code elements} is null
      */
     public static <T> Stream<T> of(final T... elements) {
+        Objects.requireNonNull(elements);
         return new Stream<T>(new LsaIterator<T>() {
 
             private int index = 0;
@@ -276,8 +268,10 @@ public class Stream<T> {
      * @param <T> the type of the stream elements
      * @param supplier  the {@code Supplier} of generated elements
      * @return the new stream
+     * @throws NullPointerException if {@code supplier} is null
      */
     public static <T> Stream<T> generate(final Supplier<T> supplier) {
+        Objects.requireNonNull(supplier);
         return new Stream<T>(new LsaIterator<T>() {
 
             @Override
@@ -299,8 +293,10 @@ public class Stream<T> {
      * @param seed  the initial value
      * @param op  operator to produce new element by previous one
      * @return the new stream
+     * @throws NullPointerException if {@code op} is null
      */
     public static <T> Stream<T> iterate(final T seed, final UnaryOperator<T> op) {
+        Objects.requireNonNull(op);
         return new Stream<T>(new LsaIterator<T>() {
 
             private boolean firstRun = true;
@@ -331,8 +327,11 @@ public class Stream<T> {
      * @param stream1  the first stream
      * @param stream2  the second stream
      * @return the new concatenated stream
+     * @throws NullPointerException if {@code stream1} or {@code stream2} is null
      */
     public static <T> Stream<T> concat(Stream<? extends T> stream1, Stream<? extends T> stream2) {
+        Objects.requireNonNull(stream1);
+        Objects.requireNonNull(stream2);
         final Iterator<? extends T> it1 = stream1.iterator;
         final Iterator<? extends T> it2 = stream2.iterator;
         return new Stream<T>(new LsaExtIterator<T>() {
@@ -364,8 +363,11 @@ public class Stream<T> {
      * @param stream2  the second stream
      * @param combiner  the combiner function used to apply to each element
      * @return the new stream
+     * @throws NullPointerException if {@code stream1} or {@code stream2} is null
      */
     public static <F, S, R> Stream<R> zip(Stream<? extends F> stream1, Stream<? extends S> stream2, final BiFunction<? super F, ? super S, ? extends R> combiner) {
+        Objects.requireNonNull(stream1);
+        Objects.requireNonNull(stream2);
         final Iterator<? extends F> it1 = stream1.iterator;
         final Iterator<? extends S> it2 = stream2.iterator;
         return new Stream<R>(new LsaIterator<R>() {
@@ -399,9 +401,20 @@ public class Stream<T> {
     /**
      * Returns internal stream iterator.
      *
+     * @deprecated  As of release 1.1.1, replaced by {@link #iterator()}
      * @return internal stream iterator
      */
+    @Deprecated
     public Iterator<? extends T> getIterator() {
+        return iterator;
+    }
+
+    /**
+     * Returns internal stream iterator.
+     *
+     * @return internal stream iterator
+     */
+    public Iterator<? extends T> iterator() {
         return iterator;
     }
 
@@ -414,7 +427,7 @@ public class Stream<T> {
      * <p>Operator examples:
      * <pre><code>
      *     // Intermediate operator
-     *     public static class Reverse&lt;T&gt; implements Function&lt;Stream&lt;T&gt;, Stream&lt;T&gt;&gt; {
+     *     public class Reverse&lt;T&gt; implements Function&lt;Stream&lt;T&gt;, Stream&lt;T&gt;&gt; {
      *         &#64;Override
      *         public Stream&lt;T&gt; apply(Stream&lt;T&gt; stream) {
      *             final Iterator&lt;? extends T&gt; iterator = stream.getIterator();
@@ -427,7 +440,7 @@ public class Stream<T> {
      *     }
      *
      *     // Intermediate operator based on existing stream operators
-     *     public static class SkipAndLimit&lt;T&gt; implements UnaryOperator&lt;Stream&lt;T&gt;&gt; {
+     *     public class SkipAndLimit&lt;T&gt; implements UnaryOperator&lt;Stream&lt;T&gt;&gt; {
      *
      *         private final int skip, limit;
      *
@@ -443,7 +456,7 @@ public class Stream<T> {
      *     }
      *
      *     // Terminal operator
-     *     public static class Sum implements Function&lt;Stream&lt;Integer&gt;, Integer&gt; {
+     *     public class Sum implements Function&lt;Stream&lt;Integer&gt;, Integer&gt; {
      *         &#64;Override
      *         public Integer apply(Stream&lt;Integer&gt; stream) {
      *             return stream.reduce(0, new BinaryOperator&lt;Integer&gt;() {
@@ -456,11 +469,13 @@ public class Stream<T> {
      *     }
      * </code></pre>
      *
-     * @param <R> the type result
+     * @param <R> the type of the result
      * @param function  a transforming function
      * @return a result of the transforming function
+     * @throws NullPointerException if {@code function} is null
      */
     public <R> R custom(Function<Stream<T>, R> function) {
+        Objects.requireNonNull(function);
         return function.apply(this);
     }
 
@@ -574,6 +589,30 @@ public class Stream<T> {
     }
 
     /**
+     * Returns {@code IntStream} with elements that obtained by applying the given function.
+     *
+     * <p>This is an intermediate operation.
+     *
+     * @param mapper  the mapper function used to apply to each element
+     * @return the new {@code IntStream}
+     * @see #map(com.annimon.stream.function.Function)
+     */
+    public IntStream mapToInt(final ToIntFunction<? super T> mapper) {
+        return new IntStream(new PrimitiveIterator.OfInt() {
+
+            @Override
+            public boolean hasNext() {
+                return iterator.hasNext();
+            }
+
+            @Override
+            public int nextInt() {
+                return mapper.applyAsInt(iterator.next());
+            }
+        });
+    }
+
+    /**
      * Generates {@code Stream} by concatenating elements that obtained by applying the given function.
      *
      * <p>This is an intermediate operation.
@@ -600,6 +639,46 @@ public class Stream<T> {
                         final Stream <? extends R> result = mapper.apply(arg);
                         if (result != null) {
                             inner = result.iterator;
+                        }
+                    }
+                    if ((inner != null) && inner.hasNext()) {
+                        next = inner.next();
+                        hasNext = true;
+                        return;
+                    }
+                }
+                hasNext = false;
+            }
+        });
+    }
+
+    /**
+     * Generates {@code IntStream} by concatenating elements that obtained by applying the given function.
+     *
+     * <p>This is an intermediate operation.
+     *
+     * @param mapper  the mapper function used to apply to each element
+     * @return the new {@code IntStream}
+     * @see #flatMap(com.annimon.stream.function.Function)
+     */
+    public IntStream flatMapToInt(final Function<? super T, ? extends IntStream> mapper) {
+        return new IntStream(new PrimitiveExtIterator.OfInt() {
+
+            private PrimitiveIterator.OfInt inner;
+
+            @Override
+            protected void nextIteration() {
+                if ((inner != null) && inner.hasNext()) {
+                    next = inner.next();
+                    hasNext = true;
+                    return;
+                }
+                while (iterator.hasNext()) {
+                    if (inner == null || !inner.hasNext()) {
+                        final T arg = iterator.next();
+                        final IntStream result = mapper.apply(arg);
+                        if (result != null) {
+                            inner = result.iterator();
                         }
                     }
                     if ((inner != null) && inner.hasNext()) {
@@ -785,6 +864,8 @@ public class Stream<T> {
      * @return the new stream
      */
     public Stream<T> sample(final int stepWidth) {
+        if (stepWidth == 1) return this;
+        
         return slidingWindow(1, stepWidth).map(new Function<List<T>, T>() {
             @Override
             public T apply(List<T> list) {
@@ -839,7 +920,7 @@ public class Stream<T> {
      */
     public Stream<List<T>> slidingWindow(final int windowSize, final int stepWidth) {
         return new Stream<List<T>>(new LsaIterator<List<T>>() {
-            private final Queue<T> queue = new LinkedList<T>();
+            private final Queue<T> queue = Compat.queue();
 
             @Override
             public boolean hasNext() {
@@ -849,7 +930,7 @@ public class Stream<T> {
             @Override
             public List<T> nextIteration() {
                 int i = queue.size();
-                while (iterator.hasNext() && i < windowSize) {
+                while (i < windowSize && iterator.hasNext()) {
                     queue.offer(iterator.next());
                     i++;
                 }
@@ -858,13 +939,13 @@ public class Stream<T> {
                 List<T> list = new ArrayList<T>(queue);
 
                 // remove stepWidth elements from the queue
-                int queueSize = queue.size();
-                for (int j = 0; j < stepWidth && j < queueSize; j++) {
+                final int pollCount = Math.min(queue.size(), stepWidth);
+                for (int j = 0; j < pollCount; j++) {
                     queue.poll();
                 }
 
                 // if the stepWidth is greater than the windowSize, skip (stepWidth - windowSize) elements
-                for (int j = windowSize; iterator.hasNext() && j < stepWidth; j++) {
+                for (int j = windowSize; j < stepWidth && iterator.hasNext(); j++) {
                     iterator.next();
                 }
 
@@ -954,8 +1035,15 @@ public class Stream<T> {
      *
      * @param maxSize  the number of elements to limit
      * @return the new stream
+     * @throws IllegalArgumentException if {@code maxSize} is negative
      */
     public Stream<T> limit(final long maxSize) {
+        if (maxSize < 0) {
+            throw new IllegalArgumentException();
+        }
+        if (maxSize == 0) {
+            return Stream.empty();
+        }
         return new Stream<T>(new LsaIterator<T>() {
 
             private long index = 0;
@@ -980,20 +1068,25 @@ public class Stream<T> {
      *
      * @param n  the number of elements to skip
      * @return the new stream
+     * @throws IllegalArgumentException if {@code n} is negative
      */
     public Stream<T> skip(final long n) {
+        if (n < 0) {
+            throw new IllegalArgumentException();
+        }
+        if (n == 0) {
+            return this;
+        }
         return new Stream<T>(new LsaIterator<T>() {
 
             private long skippedCount;
 
             @Override
             public boolean hasNext() {
-                if (skippedCount < n) {
-                    while (skippedCount < n) {
-                        if (!iterator.hasNext()) return false;
-                        iterator.next();
-                        skippedCount++;
-                    }
+                while (skippedCount < n) {
+                    if (!iterator.hasNext()) return false;
+                    iterator.next();
+                    skippedCount++;
                 }
                 return iterator.hasNext();
             }
@@ -1095,7 +1188,7 @@ public class Stream<T> {
         if (size >= MAX_ARRAY_SIZE) throw new IllegalArgumentException(BAD_SIZE);
 
         //noinspection unchecked
-        T[] source = container.toArray(Stream.<T>newArray(size));
+        T[] source = container.toArray(Compat.<T>newArray(size));
         R[] boxed = generator.apply(size);
 
         //noinspection SuspiciousSystemArraycopy
@@ -1270,25 +1363,6 @@ public class Stream<T> {
         // allMatch -> true
         // noneMatch -> true
         return !kindAny;
-    }
-
-    @SafeVarargs
-    static <E> E[] newArray(int length, E... array) {
-        try {
-            return Arrays.copyOf(array, length);
-        } catch (NoSuchMethodError nme) {
-            return newArrayCompat(length, array);
-        }
-    }
-
-    @SuppressWarnings("unchecked")
-    static<E> E[] newArrayCompat(int length, E... array) {
-
-        final E[] res = (E[])Array.newInstance(array.getClass().getComponentType(), length);
-
-        System.arraycopy(array, 0, res, 0, Math.min(length, array.length));
-
-        return res;
     }
 
     private List<T> collectToList() {

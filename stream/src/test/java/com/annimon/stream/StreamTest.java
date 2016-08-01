@@ -5,8 +5,10 @@ import com.annimon.stream.function.BiFunction;
 import com.annimon.stream.function.BinaryOperator;
 import com.annimon.stream.function.Consumer;
 import com.annimon.stream.function.Function;
+import com.annimon.stream.function.IntUnaryOperator;
 import com.annimon.stream.function.Predicate;
 import com.annimon.stream.function.Supplier;
+import com.annimon.stream.function.ToIntFunction;
 import com.annimon.stream.function.UnaryOperator;
 import com.annimon.stream.test.hamcrest.OptionalMatcher;
 
@@ -23,6 +25,9 @@ import java.util.Map;
 import static com.annimon.stream.test.hamcrest.OptionalMatcher.isPresent;
 import static com.annimon.stream.test.hamcrest.StreamMatcher.elements;
 import static com.annimon.stream.test.hamcrest.StreamMatcher.isEmpty;
+import java.util.NoSuchElementException;
+import static org.hamcrest.CoreMatchers.not;
+import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
@@ -42,7 +47,7 @@ public class StreamTest {
     public void testStreamEmpty() {
         assertThat(Stream.empty(), isEmpty());
     }
-    
+
     @Test
     public void testStreamOfList() {
         final PrintConsumer<String> consumer = new PrintConsumer<String>();
@@ -75,6 +80,11 @@ public class StreamTest {
         assertEquals("This is a test", consumer.toString());
     }
 
+    @Test(expected = NullPointerException.class)
+    public void testStreamOfMapNull() {
+        Stream.of((Map)null);
+    }
+
     @Test
     public void testStreamOfIterator() {
         final PrintConsumer<Integer> consumer = new PrintConsumer<Integer>();
@@ -84,6 +94,11 @@ public class StreamTest {
                 .count();
         assertEquals(5, count);
         assertEquals("01234", consumer.toString());
+    }
+
+    @Test(expected = NullPointerException.class)
+    public void testStreamOfIteratorNull() {
+        Stream.of((Iterator)null);
     }
 
     @Test
@@ -102,6 +117,11 @@ public class StreamTest {
                 .count();
         assertEquals(5, count);
         assertEquals("01234", consumer.toString());
+    }
+
+    @Test(expected = NullPointerException.class)
+    public void testStreamOfIterableNull() {
+        Stream.of((Iterable)null);
     }
 
     @Test
@@ -179,6 +199,11 @@ public class StreamTest {
         assertThat(stream, elements(is(expected)));
     }
 
+    @Test(expected = NullPointerException.class)
+    public void testGenerateNull() {
+        Stream.generate(null);
+    }
+
     @Test
     public void testIterate() {
         final BigInteger two = BigInteger.valueOf(2);
@@ -197,6 +222,11 @@ public class StreamTest {
                     }
                 });
         assertEquals(new BigInteger("1267650600228229401496703205375"), sum);
+    }
+
+    @Test(expected = NullPointerException.class)
+    public void testIterateNull() {
+        Stream.iterate(1, null);
     }
 
     @Test(timeout=2000)
@@ -227,6 +257,16 @@ public class StreamTest {
         Stream<String> stream = Stream.concat(stream1, stream2);
         stream.forEach(consumer);
         assertEquals("abcdefgh", consumer.toString());
+    }
+
+    @Test(expected = NullPointerException.class)
+    public void testConcatNull1() {
+        Stream.concat(null, Stream.empty());
+    }
+
+    @Test(expected = NullPointerException.class)
+    public void testConcatNull2() {
+        Stream.concat(Stream.empty(), null);
     }
 
     @Test
@@ -266,6 +306,26 @@ public class StreamTest {
         assertThat(zipped, elements(is(Arrays.asList(2, 4, 6, 8, 10))));
     }
 
+    @Test(expected = NullPointerException.class)
+    public void testZipNull1() {
+        Stream.zip(null, Stream.<Integer>empty(), Functions.addition());
+    }
+
+    @Test(expected = NullPointerException.class)
+    public void testZipNull2() {
+        Stream.zip(Stream.<Integer>empty(), null, Functions.addition());
+    }
+
+    @Test
+    public void testGetIterator() {
+        assertThat(Stream.of(1).getIterator(), is(not(nullValue())));
+    }
+
+    @Test
+    public void testIterator() {
+        assertThat(Stream.of(1).iterator(), is(not(nullValue())));
+    }
+
     @Test
     public void testFilter() {
         final PrintConsumer<Integer> consumer = new PrintConsumer<Integer>();
@@ -282,6 +342,22 @@ public class StreamTest {
                 .filterNot(Functions.remainder(2))
                 .forEach(consumer);
         assertEquals("13579", consumer.toString());
+    }
+
+    @Test(expected = NoSuchElementException.class)
+    public void testFilterIteratorNextOnEmpty() {
+        Stream.<Integer>empty()
+                .filter(Functions.remainder(2))
+                .iterator()
+                .next();
+    }
+
+    @Test(expected = UnsupportedOperationException.class)
+    public void testFilterIteratorRemove() {
+        Stream.range(0, 10)
+                .filter(Functions.remainder(2))
+                .iterator()
+                .remove();
     }
 
     @Test
@@ -381,6 +457,22 @@ public class StreamTest {
     }
 
     @Test
+    public void testMapToInt() {
+        final ToIntFunction<String> stringToSquareInt = new ToIntFunction<String>() {
+            @Override
+            public int applyAsInt(String t) {
+                final String str = t.substring(1, t.length() - 1);
+                final int value = Integer.parseInt(str);
+                return value * value;
+            }
+        };
+        int[] expected = { 4, 9, 16, 64, 625 };
+        IntStream stream = Stream.of("[2]", "[3]", "[4]", "[8]", "[25]")
+                .mapToInt(stringToSquareInt);
+        assertThat(stream.toArray(), is(expected));
+    }
+
+    @Test
     public void testFlatMap() {
         final PrintConsumer<String> consumer = new PrintConsumer<String>();
         Stream.rangeClosed(2, 4)
@@ -408,6 +500,24 @@ public class StreamTest {
                 "3 * 4 = 12\n" +
                 "4 * 2 = 8\n" +
                 "4 * 4 = 16\n", consumer.toString());
+    }
+
+    @Test
+    public void testFlatMapToInt() {
+        int[] actual = Stream.rangeClosed(2, 4)
+                .flatMapToInt(new Function<Integer, IntStream>() {
+
+                    @Override
+                    public IntStream apply(Integer t) {
+                        return IntStream
+                                .iterate(t, IntUnaryOperator.Util.identity())
+                                .limit(t);
+                    }
+                })
+                .toArray();
+
+        int[] expected = { 2, 2, 3, 3, 3, 4, 4, 4, 4 };
+        assertThat(actual, is(expected));
     }
 
     @Test
@@ -471,7 +581,7 @@ public class StreamTest {
                 });
         assertThat(stream, elements(is(expected)));
     }
-    
+
     @Test
     public void testSortByStudentName() {
         final List<Student> students = Arrays.asList(
@@ -558,6 +668,13 @@ public class StreamTest {
         final PrintConsumer<Integer> pc1 = new PrintConsumer<Integer>();
         Stream.of(1, 2, 3, 1, 2, 3, 1, 2, 3).sample(3).forEach(pc1);
         assertEquals("111", pc1.toString());
+    }
+
+    @Test
+    public void testSampleWithStep1() {
+        final PrintConsumer<Integer> pc1 = new PrintConsumer<Integer>();
+        Stream.of(1, 2, 3, 1, 2, 3, 1, 2, 3).sample(1).forEach(pc1);
+        assertEquals("123123123", pc1.toString());
     }
 
     @Test
@@ -659,6 +776,17 @@ public class StreamTest {
         assertEquals("01", consumer.toString());
     }
 
+    @Test(expected = IllegalArgumentException.class)
+    public void testLimitNegative() {
+        Stream.range(0, 10).limit(-2).count();
+    }
+
+    @Test
+    public void testLimitZero() {
+        final Stream<Integer> stream = Stream.range(0, 10).limit(0);
+        assertThat(stream, isEmpty());
+    }
+
     @Test
     public void testLimitMoreThanCount() {
         final PrintConsumer<Integer> consumer = new PrintConsumer<Integer>();
@@ -677,6 +805,17 @@ public class StreamTest {
                 .skip(7)
                 .forEach(consumer);
         assertEquals("789", consumer.toString());
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void testSkipNegative() {
+        Stream.range(0, 10).skip(-2).count();
+    }
+
+    @Test
+    public void testSkipZero() {
+        long count = Stream.range(0, 2).skip(0).count();
+        assertEquals(2, count);
     }
 
     @Test
@@ -992,6 +1131,11 @@ public class StreamTest {
         assertNotNull(numbers[100]);
     }
 
+    @Test(expected = NullPointerException.class)
+    public void testCustomNull() {
+        Stream.empty().custom(null);
+    }
+
     @Test
     public void testCustomIntermediateOperator_Reverse() {
         PrintConsumer<Integer> consumer = new PrintConsumer<Integer>();
@@ -1041,7 +1185,7 @@ public class StreamTest {
     public void testNewArrayCompat() {
         String[] strings = new String[] {"abc", "def", "fff"};
 
-        String[] copy = Stream.newArrayCompat(5, strings);
+        String[] copy = Compat.newArrayCompat(strings, 5);
 
         assertEquals(5, copy.length);
         assertEquals("abc", copy[0]);
@@ -1049,11 +1193,11 @@ public class StreamTest {
 
         String[] empty = new String[0];
 
-        String[] emptyCopy = Stream.newArrayCompat(3, empty);
+        String[] emptyCopy = Compat.newArrayCompat(empty, 3);
 
         assertEquals(3, emptyCopy.length);
 
-        emptyCopy = Stream.newArrayCompat(0, empty);
+        emptyCopy = Compat.newArrayCompat(empty, 0);
 
         assertEquals(0, emptyCopy.length);
     }

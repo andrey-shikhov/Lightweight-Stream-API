@@ -3,7 +3,6 @@ package com.annimon.stream.function;
 /**
  * Represents an operation on a single int-valued operand that produces an int-valued result.
  * This is the primitive type specialization of UnaryOperator for int.
- *
  */
 @FunctionalInterface
 public interface IntUnaryOperator {
@@ -18,9 +17,7 @@ public interface IntUnaryOperator {
 
     class Util {
 
-        private Util() {
-            throw new UnsupportedOperationException();
-        }
+        private Util() { }
 
         /**
          * Returns a unary operator that always returns its input argument.

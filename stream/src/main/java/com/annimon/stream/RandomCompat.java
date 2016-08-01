@@ -14,23 +14,33 @@ public final class RandomCompat {
     private final Random random;
 
     /**
-     * Constructs object, inner {@code random} created with default constructor
+     * Constructs object, inner {@code random} created with default constructor.
      */
     public RandomCompat() {
         this.random = new Random();
     }
 
     /**
-     * Constructs object, inner {@code random} created with seed passed as param
+     * Constructs object, inner {@code random} created with seed passed as param.
      *
-     * @param seed seed to initialize {@code random} object.
+     * @param seed seed to initialize {@code random} object
      */
     public RandomCompat(long seed) {
         this.random = new Random(seed);
     }
 
     /**
-     * Returns underlying {@link java.util.Random} instance
+     * Constructs object with the given {@code Random} instance.
+     *
+     * @param random  {@code Random} instance
+     */
+    public RandomCompat(Random random) {
+        this.random = random;
+    }
+
+    /**
+     * Returns underlying {@link java.util.Random} instance.
+     *
      * @return {@link java.util.Random} object instance
      */
     public Random getRandom() {
@@ -57,12 +67,7 @@ public final class RandomCompat {
         if(streamSize == 0L)
             return IntStream.empty();
 
-        return IntStream.generate(new IntSupplier() {
-            @Override
-            public int getAsInt() {
-                return random.nextInt();
-            }
-        }).limit(streamSize);
+        return ints().limit(streamSize);
     }
 
     /**
@@ -125,7 +130,7 @@ public final class RandomCompat {
 
         return IntStream.generate(new IntSupplier() {
 
-            private int bound = randomNumberBound - randomNumberOrigin;
+            private final int bound = randomNumberBound - randomNumberOrigin;
 
             @Override
             public int getAsInt() {
